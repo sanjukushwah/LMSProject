@@ -1,0 +1,87 @@
+import Button from 'react-bootstrap/Button';
+import Modal from 'react-bootstrap/Modal';
+import { useForm } from 'react-hook-form';
+import { apiUrl, token } from '../../common/Config';
+import toast from 'react-hot-toast';
+import { useEffect, useState } from 'react';
+
+const UpdateRequirement = ({showRequirement,handleClose,requirementData,setRequirements,requirements}) => {
+    const [loading,setLoading] = useState(false);
+            const {register,handleSubmit,formState:{errors},reset} = useForm();
+
+
+        const onSubmit =async (data)=>{
+            setLoading(true)
+                    
+                        await fetch(`${apiUrl}/requirements/${requirementData.id}`,{
+                        method:'PUT',
+                        headers:{
+                            'content-type':'application/json',
+                            'Accept':"application/json",
+                            'Authorization':`Bearer ${token}`
+                        },
+                        body:JSON.stringify({requirement: data.requirement})
+                    })
+                    .then(res=>res.json())
+                    .then(result =>{
+                        setLoading(false)
+                        console.log(result)
+                        if(result.status ==200){
+                            
+                            const updatedRequirements = requirements.map(requirement => requirement.id == result.data.id ? {...requirement, text:result.data.text}:requirement)
+                            setRequirements(updatedRequirements)
+                            handleClose();
+    
+                           toast.success(result.message)
+
+                          
+                        }else{
+                           toast.error("Something went wrong");
+                        }
+                    });
+                    }
+
+        useEffect(()=>{
+            if(requirementData){
+                reset({
+                    requirement:requirementData.text
+                })
+            }
+        },[requirementData,reset])
+  return (
+    <>
+    <Modal size='lg' show={showRequirement} onHide={handleClose}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <Modal.Header closeButton>
+          <Modal.Title>Update Requirement</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+            <div className="mb-3">
+                <label htmlFor="" className='form-label'>Title</label>
+                <input
+                {
+                    ...register('requirement',{
+                        required:"The requirement field is required."
+                    })
+                }
+                type="text" className={`form-control ${errors.requirement && 'is-invalid'}`} placeholder='requirement' />
+                {
+                                                    errors.requirement && <p className='invalid-feedback'>{errors.requirement.message}</p>
+                                                }
+            </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+          
+          <button disabled={loading}
+                                 className='btn btn-primary'>{loading == false ? 'Save' :"Please wait..."}</button>
+        </Modal.Footer>
+        </form>
+      </Modal>
+    </>
+  )
+}
+
+export default UpdateRequirement
